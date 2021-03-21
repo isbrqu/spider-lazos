@@ -3,6 +3,7 @@ from pprint import pprint
 from scrapy.linkextractors import LinkExtractor
 from urllib.parse import parse_qs
 import scrapy
+import re
 import urllib.parse as urlparse
 
 now = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
@@ -10,10 +11,17 @@ now = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
 def _param(url, param):
     parsed = urlparse.urlparse(url)
     value = parse_qs(parsed.query).get(param)
-    return value[0] if value else None
+    return value[0] if value else ''
 
 def _add_param_perpage(url):
     return f'{url}&&perpage=200'
+
+def _normalize(text, delete=[]):
+    text = text.lower()
+    for word in delete:
+        text = text.replace(word.lower(), '')
+    text = re.sub(r'\s{2,}', ' ', text).strip()
+    return text
 
 class CourseSpider(scrapy.Spider):
     name = 'course'
@@ -60,12 +68,10 @@ class CourseSpider(scrapy.Spider):
 
     def parse_categories(self, response):
         categories = self.link_extractor_category.extract_links(response)
+        delete = ['CPEM 55']
         for category in categories:
-            id_ = _param(category.url, 'categoryid') or 0
-            name = category.text\
-                .replace('CPEM 55', '')\
-                .strip()\
-                .lower()
+            id_ = _param(category.url, 'categoryid')
+            name = _normalize(category.text, delete=delete) 
             cb_kwargs = dict(category_id=id_, category_name=name)
             yield response.follow(
                 url=category,
@@ -75,13 +81,10 @@ class CourseSpider(scrapy.Spider):
 
     def parse_courses(self, response, category_id, category_name):
         courses = self.link_extractor_course.extract_links(response)
+        delete = ['CPEM 55', category_name]
         for course in courses:
-            id_ = _param(course.url, 'id') or 0
-            name = course.text\
-                .replace('CPEM 55', '')\
-                .replace(category_name, '')\
-                .strip()\
-                .lower()
+            id_ = _param(course.url, 'id')
+            name = _normalize(course.text, delete=delete)
             yield {
                 'id': id_,
                 'name': name,
