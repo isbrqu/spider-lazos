@@ -39,6 +39,7 @@ class CourseSpider(scrapy.Spider):
             }
         },
         'LOG_FILE': f'log/{name}.log',
+        'ROBOTSTXT_OBEY': False,
         # 'CLOSESPIDER_PAGECOUNT': 10,
     }
 
