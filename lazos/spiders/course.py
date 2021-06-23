@@ -38,7 +38,7 @@ class CourseSpider(scrapy.Spider):
                 'store_empty': False,
             }
         },
-        'LOG_FILE': f'log/{name}.log',
+        'LOG_FILE': f'store/log/{name}.log',
         'ROBOTSTXT_OBEY': False,
         # 'CLOSESPIDER_PAGECOUNT': 10,
     }
@@ -63,7 +63,7 @@ class CourseSpider(scrapy.Spider):
         )
 
     def follow_after_login(self, response):
-        params = 'categoryid=2551'
+        params = 'categoryid=2551&perpage=200'
         url = f'{self.main_url}/course/index.php?{params}'
         return scrapy.Request(url=url, callback=self.parse_categories)
 
@@ -86,10 +86,16 @@ class CourseSpider(scrapy.Spider):
         for course in courses:
             id_ = _param(course.url, 'id')
             name = _normalize(course.text, delete=delete)
+            year = category_name[0]
+            division = category_name[1]
+            turn = category_name[2]
             yield {
                 'id': id_,
                 'name': name,
                 'group_name': category_name,
                 'group_id': category_id,
+                'year': year,
+                'division': division,
+                'turn': turn,
            }
 
